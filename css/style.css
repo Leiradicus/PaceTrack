@@ -1,0 +1,153 @@
+/* Include padding and borders in element widths. */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.6;
+  color: #172033;
+  background-color: #f4f6fa;
+}
+
+/* Shared content width for header, main, and footer. */
+.container {
+  width: 100%;
+  max-width: 1100px;
+  margin-inline: auto;
+  padding-inline: 20px;
+}
+
+.site-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #d7dce5;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-block: 20px;
+}
+
+.logo {
+  color: #1746a2;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-links a {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 6px;
+  color: #172033;
+  text-decoration: none;
+}
+
+.nav-links a:hover {
+  background-color: #e8eefb;
+}
+
+.nav-links a[aria-current="page"] {
+  color: #ffffff;
+  background-color: #1746a2;
+  font-weight: bold;
+}
+
+/* Visible outline for keyboard users. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #1746a2;
+  outline-offset: 3px;
+}
+
+main {
+  flex: 1;
+  padding-block: 32px;
+}
+
+h1,
+h2 {
+  line-height: 1.2;
+}
+
+h1 {
+  margin-top: 0;
+}
+
+.page-description {
+  color: #4b5563;
+  margin-bottom: 24px;
+}
+
+.card {
+  padding: 24px;
+  background-color: #ffffff;
+  border: 1px solid #d7dce5;
+  border-radius: 12px;
+}
+
+.card h2 {
+  margin-top: 0;
+}
+
+.site-footer {
+  padding-block: 16px;
+  border-top: 1px solid #d7dce5;
+  color: #4b5563;
+  background-color: #ffffff;
+}
+
+/* Hidden until someone reaches it using the Tab key. */
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  transform: translateY(-200%);
+  padding: 10px 16px;
+  color: #ffffff;
+  background-color: #1746a2;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+@media (max-width: 600px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nav-links {
+    gap: 4px;
+  }
+
+  .nav-links a {
+    padding: 10px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+}
