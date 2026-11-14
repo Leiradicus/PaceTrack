@@ -44,10 +44,69 @@
       Track your progress and work toward your weekly goal.
     </p>
 
-    <section class="card" aria-labelledby="overview-heading">
-      <h2 id="overview-heading">Your Overview</h2>
-      <p>Your profile and running stats will appear here.</p>
+    <section class="card" id="empty-state" aria-labelledby="empty-heading" hidden>
+      <h2 id="empty-heading">Welcome to PaceTrack!</h2>
+      <p>You haven't logged any runs yet. Log your first run to see your totals, average pace, and personal records here.</p>
+      <a class="button" href="tracker.html">Log your first run</a>
     </section>
+
+    <div id="dashboard" hidden>
+      <section class="card" aria-labelledby="overview-heading">
+        <h2 id="overview-heading">Your Overview</h2>
+        <dl class="stat-grid">
+          <div class="stat">
+            <dt>Total runs</dt>
+            <dd id="stat-total-runs">0</dd>
+          </div>
+          <div class="stat">
+            <dt>Total distance</dt>
+            <dd id="stat-total-distance">0 mi</dd>
+          </div>
+          <div class="stat">
+            <dt>Overall average pace</dt>
+            <dd id="stat-average-pace">—</dd>
+          </div>
+        </dl>
+        <p class="stat-note">Overall average pace is your total running time divided by your total distance.</p>
+      </section>
+
+      <section class="card" aria-labelledby="records-heading">
+        <h2 id="records-heading">Personal Records</h2>
+        <dl class="stat-grid">
+          <div class="stat">
+            <dt>Longest run (distance)</dt>
+            <dd id="record-longest">—</dd>
+            <dd class="stat-detail" id="record-longest-detail"></dd>
+          </div>
+          <div class="stat">
+            <dt>Fastest average pace on a single run</dt>
+            <dd id="record-fastest">—</dd>
+            <dd class="stat-detail" id="record-fastest-detail"></dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="card" aria-labelledby="recent-heading">
+        <h2 id="recent-heading">Recent Runs</h2>
+        <p class="stat-note">Your five most recent runs, newest first.</p>
+        <div class="table-wrapper">
+          <table class="run-table">
+            <caption class="visually-hidden">Five most recent runs, newest first</caption>
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Run</th>
+                <th scope="col">Distance</th>
+                <th scope="col">Duration</th>
+                <th scope="col">Pace</th>
+              </tr>
+            </thead>
+            <tbody id="recent-runs"></tbody>
+          </table>
+        </div>
+        <p><a href="tracker.html">Log another run</a></p>
+      </section>
+    </div>
   </main>
 
   <footer class="site-footer">
