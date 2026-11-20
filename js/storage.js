@@ -18,6 +18,11 @@
 const PaceTrack = (function () {
   const RUNS_KEY = "pacetrack.runs";
 
+  // Your profile is stored under PROFILE_KEY as a JSON object: { name: string }.
+  // An empty name means "show You".
+  const PROFILE_KEY = "pacetrack.profile";
+  const MAX_NAME_LENGTH = 40;
+
   // Accept only records that have the fields we need; skip anything broken
   // instead of letting one bad entry break the whole page.
   function isValidRun(run) {
@@ -29,6 +34,19 @@ const PaceTrack = (function () {
       Number(run.distanceMiles) > 0 &&
       Number(run.durationSeconds) > 0
     );
+  }
+
+  // Cleans one valid stored run into the shape every page uses.
+  function normalizeRun(run) {
+    return {
+      id: String(run.id || run.createdAt || run.date),
+      date: run.date,
+      distanceMiles: Number(run.distanceMiles),
+      durationSeconds: Math.round(Number(run.durationSeconds)),
+      title: typeof run.title === "string" ? run.title : "",
+      notes: typeof run.notes === "string" ? run.notes : "",
+      createdAt: typeof run.createdAt === "string" ? run.createdAt : ""
+    };
   }
 
   function loadRuns() {
@@ -46,17 +64,7 @@ const PaceTrack = (function () {
       if (!Array.isArray(parsed)) {
         return [];
       }
-      return parsed.filter(isValidRun).map(function (run) {
-        return {
-          id: String(run.id || run.createdAt || run.date),
-          date: run.date,
-          distanceMiles: Number(run.distanceMiles),
-          durationSeconds: Math.round(Number(run.durationSeconds)),
-          title: typeof run.title === "string" ? run.title : "",
-          notes: typeof run.notes === "string" ? run.notes : "",
-          createdAt: typeof run.createdAt === "string" ? run.createdAt : ""
-        };
-      });
+      return parsed.filter(isValidRun).map(normalizeRun);
     } catch (error) {
       return [];
     }
@@ -89,6 +97,87 @@ const PaceTrack = (function () {
     existing.push(record);
     localStorage.setItem(RUNS_KEY, JSON.stringify(existing));
     return record;
+  }
+
+  function storageError(code, message) {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+  }
+
+  function sameRun(a, b) {
+    return a.id === b.id && a.date === b.date &&
+      a.distanceMiles === b.distanceMiles && a.durationSeconds === b.durationSeconds &&
+      a.title === b.title && a.notes === b.notes && a.createdAt === b.createdAt;
+  }
+
+  // Removes one run, given as loadRuns() returned it. Re-reads storage first
+  // and removes only the single matching entry, so runs saved in another tab
+  // and entries this app can't read are kept. Throws with error.code
+  // "invalid" (stored runs unreadable), "notfound" (already removed), or a
+  // browser storage error.
+  function deleteRun(target) {
+    const raw = localStorage.getItem(RUNS_KEY);
+    let parsed = null;
+    try {
+      parsed = raw === null ? null : JSON.parse(raw);
+    } catch (error) {
+      parsed = null;
+    }
+    if (raw !== null && !Array.isArray(parsed)) {
+      throw storageError("invalid", "Stored runs are not a list.");
+    }
+    const runs = parsed || [];
+    let index = -1;
+    for (let i = 0; i < runs.length; i += 1) {
+      if (isValidRun(runs[i]) && sameRun(normalizeRun(runs[i]), target)) {
+        index = i;
+        break;
+      }
+    }
+    if (index === -1) {
+      throw storageError("notfound", "That run is no longer saved.");
+    }
+    runs.splice(index, 1);
+    localStorage.setItem(RUNS_KEY, JSON.stringify(runs));
+  }
+
+  // Trims, collapses spaces, and limits length. Non-strings become "".
+  function cleanName(name) {
+    if (typeof name !== "string") {
+      return "";
+    }
+    return name.trim().replace(/\s+/g, " ").slice(0, MAX_NAME_LENGTH).trim();
+  }
+
+  // status is "ok", "invalid", or "unavailable"; name is "" when not set.
+  function loadProfile() {
+    const result = readJSON(PROFILE_KEY);
+    if (result.status === "missing") {
+      return { status: "ok", name: "" };
+    }
+    if (result.status !== "ok") {
+      return { status: result.status, name: "" };
+    }
+    const value = result.value;
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+      return { status: "invalid", name: "" };
+    }
+    return { status: "ok", name: cleanName(value.name) };
+  }
+
+  // Saves the display name and returns the cleaned name. Keeps any other
+  // profile fields. Throws if the browser refuses to save.
+  function saveProfileName(name) {
+    let profile = {};
+    const result = readJSON(PROFILE_KEY);
+    if (result.status === "ok" && result.value !== null &&
+        typeof result.value === "object" && !Array.isArray(result.value)) {
+      profile = result.value;
+    }
+    profile.name = cleanName(name);
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    return profile.name;
   }
 
   // Newest run date first; for runs on the same day, the most recently
@@ -167,8 +256,58 @@ const PaceTrack = (function () {
     return now.getFullYear() + "-" + pad2(now.getMonth() + 1) + "-" + pad2(now.getDate());
   }
 
+  // Reads and parses any stored JSON value without throwing, and says why
+  // nothing usable came back. status is one of:
+  //   "ok"          - value holds the parsed JSON
+  //   "missing"     - nothing has been saved under this key yet
+  //   "invalid"     - something is saved but it is not valid JSON
+  //   "unavailable" - the browser blocked access to localStorage
+  function readJSON(key) {
+    let raw;
+    try {
+      raw = localStorage.getItem(key);
+    } catch (error) {
+      return { status: "unavailable", value: null };
+    }
+    if (raw === null) {
+      return { status: "missing", value: null };
+    }
+    try {
+      return { status: "ok", value: JSON.parse(raw) };
+    } catch (error) {
+      return { status: "invalid", value: null };
+    }
+  }
+
+  // Lets a page warn about unreadable runs instead of quietly showing an
+  // empty list. Never changes what is stored. skipped counts entries that
+  // loadRuns() leaves out because they are missing required fields.
+  function inspectRuns() {
+    const result = readJSON(RUNS_KEY);
+    if (result.status !== "ok") {
+      return { status: result.status, skipped: 0 };
+    }
+    if (!Array.isArray(result.value)) {
+      return { status: "invalid", skipped: 0 };
+    }
+    return {
+      status: "ok",
+      skipped: result.value.filter(function (run) {
+        return !isValidRun(run);
+      }).length
+    };
+  }
+
   return {
     RUNS_KEY: RUNS_KEY,
+    PROFILE_KEY: PROFILE_KEY,
+    MAX_NAME_LENGTH: MAX_NAME_LENGTH,
+    deleteRun: deleteRun,
+    cleanName: cleanName,
+    loadProfile: loadProfile,
+    saveProfileName: saveProfileName,
+    readJSON: readJSON,
+    inspectRuns: inspectRuns,
     loadRuns: loadRuns,
     addRun: addRun,
     sortNewestFirst: sortNewestFirst,

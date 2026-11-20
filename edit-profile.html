@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Edit Profile | PaceTrack</title>
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <script src="js/storage.js" defer></script>
+  <script src="js/tracker.js" defer></script>
+  <script src="js/edit-profile.js" defer></script>
+</head>
+
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="logo" href="index.html" aria-label="PaceTrack home">
+        <img src="images/pacetrack-logo.png" alt="PaceTrack" width="144" height="48">
+      </a>
+
+      <nav aria-label="Main navigation">
+        <ul class="nav-links">
+          <li>
+            <a href="index.html">Home</a>
+          </li>
+          <li>
+            <a href="tracker.html">Log Run</a>
+          </li>
+          <li>
+            <a href="feed.html">Feed</a>
+          </li>
+          <li>
+            <a href="athletes.html">Athletes</a>
+          </li>
+          <li>
+            <a href="edit-profile.html" aria-current="page">Edit Profile</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content" class="container" tabindex="-1">
+    <h1>Edit Your Profile</h1>
+
+    <p class="page-description">
+      Change the name shown on your runs and manage the runs you've logged.
+    </p>
+
+    <div id="data-notices"></div>
+
+    <section class="card" aria-labelledby="name-heading">
+      <h2 id="name-heading">Your Name</h2>
+
+      <form id="name-form" class="run-form name-form" novalidate>
+        <div class="form-field">
+          <label for="profile-name">Display name</label>
+          <p class="form-hint" id="profile-name-hint">
+            Shown on your runs in the Activity Feed. Leave it blank to show &ldquo;You&rdquo;.
+            Up to 40 characters.
+          </p>
+          <input type="text" id="profile-name" name="name" maxlength="40" autocomplete="nickname"
+                 aria-describedby="profile-name-hint">
+        </div>
+
+        <button type="submit" class="button">Save Name</button>
+
+        <div id="name-status" class="form-status" role="status" aria-live="polite"></div>
+        <div id="name-alert" class="form-status" role="alert"></div>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="run-heading">
+      <h2 id="run-heading">Add a Run</h2>
+
+      <p class="form-hint">Fields marked <span aria-hidden="true">*</span><span class="visually-hidden">with an asterisk</span> are required.</p>
+  
+      <form id="run-form" class="run-form" novalidate>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="run-date">Date <span aria-hidden="true">*</span></label>
+            <input type="date" id="run-date" name="date" required
+                   aria-describedby="run-date-error">
+            <p class="field-error" id="run-date-error"></p>
+          </div>
+  
+          <div class="form-field">
+            <label for="run-distance">Distance (miles) <span aria-hidden="true">*</span></label>
+            <input type="number" id="run-distance" name="distance" required
+                   min="0.01" step="0.01" inputmode="decimal"
+                   aria-describedby="run-distance-error">
+            <p class="field-error" id="run-distance-error"></p>
+          </div>
+        </div>
+  
+        <fieldset class="form-field duration-fieldset" id="run-duration"
+                  aria-describedby="run-duration-error">
+          <legend>Duration <span aria-hidden="true">*</span></legend>
+          <div class="duration-inputs">
+            <div>
+              <label for="run-hours">Hours</label>
+              <input type="number" id="run-hours" name="hours"
+                     min="0" step="1" inputmode="numeric" placeholder="0">
+            </div>
+            <div>
+              <label for="run-minutes">Minutes</label>
+              <input type="number" id="run-minutes" name="minutes"
+                     min="0" max="59" step="1" inputmode="numeric" placeholder="0">
+            </div>
+            <div>
+              <label for="run-seconds">Seconds</label>
+              <input type="number" id="run-seconds" name="seconds"
+                     min="0" max="59" step="1" inputmode="numeric" placeholder="0">
+            </div>
+          </div>
+          <p class="field-error" id="run-duration-error"></p>
+        </fieldset>
+  
+        <div class="form-field">
+          <label for="run-title">Title (optional)</label>
+          <input type="text" id="run-title" name="title" maxlength="80"
+                 placeholder="e.g. Easy morning run">
+        </div>
+  
+        <div class="form-field">
+          <label for="run-notes">Notes (optional)</label>
+          <textarea id="run-notes" name="notes" rows="3" maxlength="500"></textarea>
+        </div>
+  
+        <p class="pace-preview" id="pace-preview" aria-live="polite">
+          Pace: <strong id="pace-preview-value">—</strong>
+        </p>
+  
+        <button type="submit" class="button">Save Run</button>
+  
+        <div id="form-status" class="form-status" role="status" aria-live="polite"></div>
+        <div id="form-alert" class="form-status" role="alert"></div>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="manage-heading">
+      <h2 id="manage-heading" tabindex="-1">Your Runs</h2>
+      <p class="stat-note">Deleting a run removes it from your Home stats, Log Run history, and the Feed. It can't be undone.</p>
+
+      <p id="manage-status" class="results-status" role="status" aria-live="polite"></p>
+      <div id="manage-alert" class="form-status" role="alert"></div>
+
+      <p id="manage-empty" class="empty-state" hidden>You haven't logged any runs yet. Use the form above to add one.</p>
+      <ul id="manage-list" class="run-list" aria-labelledby="manage-heading"></ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>PaceTrack — Web Technologies Class Project</p>
+    </div>
+  </footer>
+</body>
+</html>

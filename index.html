@@ -17,7 +17,9 @@
 
   <header class="site-header">
     <div class="container header-content">
-      <a class="logo" href="index.html">PaceTrack</a>
+      <a class="logo" href="index.html" aria-label="PaceTrack home">
+        <img src="images/pacetrack-logo.png" alt="PaceTrack" width="144" height="48">
+      </a>
 
       <nav aria-label="Main navigation">
         <ul class="nav-links">
@@ -33,6 +35,9 @@
           <li>
             <a href="athletes.html">Athletes</a>
           </li>
+          <li>
+            <a href="edit-profile.html">Edit Profile</a>
+          </li>
         </ul>
       </nav>
     </div>
@@ -40,7 +45,7 @@
 
   <main id="main-content" class="container" tabindex="-1">
     <h1>Your Runner Profile</h1>
-    <p class="page-description">
+    <p class="page-description" id="home-intro">
       Track your progress and work toward your weekly goal.
     </p>
 

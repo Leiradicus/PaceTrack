@@ -165,7 +165,11 @@
     formAlert.classList.remove("is-error");
   }
 
+  // The Edit Profile page reuses this form without a history list.
   function renderHistory() {
+    if (!historyList || !historyEmpty) {
+      return;
+    }
     const runs = PaceTrack.sortNewestFirst(PaceTrack.loadRuns());
     historyList.replaceChildren();
     historyEmpty.hidden = runs.length > 0;
@@ -253,6 +257,8 @@
     dateInput.value = PaceTrack.todayISO();
     updatePacePreview();
     renderHistory();
+    // Lets other scripts on the page (Edit Profile) refresh their run lists.
+    document.dispatchEvent(new CustomEvent("pacetrack:runs-changed"));
   });
 
   [distanceInput, hoursInput, minutesInput, secondsInput].forEach(function (input) {

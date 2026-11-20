@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="css/style.css">
 
   <script src="js/storage.js" defer></script>
+  <script src="js/community.js" defer></script>
   <script src="js/athletes.js" defer></script>
 </head>
 
@@ -17,7 +18,9 @@
 
   <header class="site-header">
     <div class="container header-content">
-      <a class="logo" href="index.html">PaceTrack</a>
+      <a class="logo" href="index.html" aria-label="PaceTrack home">
+        <img src="images/pacetrack-logo.png" alt="PaceTrack" width="144" height="48">
+      </a>
 
       <nav aria-label="Main navigation">
         <ul class="nav-links">
@@ -33,23 +36,57 @@
           <li>
             <a href="athletes.html" aria-current="page">Athletes</a>
           </li>
+          <li>
+            <a href="edit-profile.html">Edit Profile</a>
+          </li>
         </ul>
       </nav>
     </div>
   </header>
 
   <main id="main-content" class="container" tabindex="-1">
-  <h1>Community Runners</h1>
+    <h1>Community Runners</h1>
 
-  <p class="page-description">
-    Find sample athletes by name or city and follow their profiles.
-  </p>
+    <p class="page-description">
+      Find sample athletes by name or city and follow their profiles.
+    </p>
 
-  <section class="card" aria-labelledby="athletes-heading">
-    <h2 id="athletes-heading">Find Athletes</h2>
-    <p>Athlete search and profile cards will go here.</p>
-  </section>
-</main>
+    <div id="data-notices"></div>
+
+    <section class="card" aria-labelledby="athletes-heading">
+      <h2 id="athletes-heading" tabindex="-1">Find Athletes</h2>
+
+      <p class="community-note">
+        Every runner here is a <span class="badge badge-sample">Sample profile</span> made up for this class
+        project. Follows and likes are saved only in this browser, and athletes you follow show up in the
+        <a href="feed.html">Following feed</a>.
+      </p>
+
+      <form class="athlete-controls" id="athlete-search-form" role="search" aria-label="Athletes">
+        <div class="form-field search-field">
+          <label for="athlete-search">Search by name or location</label>
+          <input type="search" id="athlete-search" name="q" autocomplete="off"
+                 placeholder="e.g. Maya or Denver">
+        </div>
+
+        <fieldset class="filter-group">
+          <legend>Show</legend>
+          <div class="segmented">
+            <input type="radio" id="athlete-filter-all" name="athlete-filter" value="all" checked>
+            <label for="athlete-filter-all">All Athletes</label>
+            <input type="radio" id="athlete-filter-following" name="athlete-filter" value="following">
+            <label for="athlete-filter-following">Following</label>
+          </div>
+        </fieldset>
+      </form>
+
+      <p id="athlete-status" class="results-status" role="status" aria-live="polite"></p>
+      <div id="athlete-alert" class="form-status" role="alert"></div>
+
+      <ul id="athlete-list" class="athlete-grid" aria-labelledby="athletes-heading"></ul>
+      <div id="athlete-empty" class="empty-panel" hidden></div>
+    </section>
+  </main>
 
   <footer class="site-footer">
     <div class="container">
