@@ -14,7 +14,19 @@
     return run.title ? run.title + ", " + PaceTrack.formatDate(run.date) : PaceTrack.formatDate(run.date);
   }
 
+  // Greets you by the name set on the Edit Profile page, if any.
+  function renderGreeting() {
+    const intro = document.getElementById("home-intro");
+    if (!intro || typeof PaceTrack.loadProfile !== "function") {
+      return;
+    }
+    const name = PaceTrack.loadProfile().name;
+    intro.textContent = (name ? "Welcome back, " + name + "! " : "") +
+      "Track your progress and work toward your weekly goal.";
+  }
+
   function render() {
+    renderGreeting();
     const runs = PaceTrack.loadRuns();
 
     if (runs.length === 0) {
@@ -86,7 +98,7 @@
 
   // Refresh if a run is saved in another tab.
   window.addEventListener("storage", function (event) {
-    if (event.key === PaceTrack.RUNS_KEY || event.key === null) {
+    if (event.key === PaceTrack.RUNS_KEY || event.key === PaceTrack.PROFILE_KEY || event.key === null) {
       render();
     }
   });

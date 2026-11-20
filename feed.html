@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="css/style.css">
 
   <script src="js/storage.js" defer></script>
+  <script src="js/community.js" defer></script>
   <script src="js/feed.js" defer></script>
 </head>
 
@@ -17,7 +18,9 @@
 
   <header class="site-header">
     <div class="container header-content">
-      <a class="logo" href="index.html">PaceTrack</a>
+      <a class="logo" href="index.html" aria-label="PaceTrack home">
+        <img src="images/pacetrack-logo.png" alt="PaceTrack" width="144" height="48">
+      </a>
 
       <nav aria-label="Main navigation">
         <ul class="nav-links">
@@ -33,23 +36,53 @@
           <li>
             <a href="athletes.html">Athletes</a>
           </li>
+          <li>
+            <a href="edit-profile.html">Edit Profile</a>
+          </li>
         </ul>
       </nav>
     </div>
   </header>
 
   <main id="main-content" class="container" tabindex="-1">
-  <h1>Recent Workouts</h1>
+    <h1>Recent Workouts</h1>
 
-  <p class="page-description">
-    View your saved runs and sample community activity.
-  </p>
+    <p class="page-description">
+      View your saved runs and sample community activity.
+    </p>
 
-  <section class="card" aria-labelledby="activity-heading">
-    <h2 id="activity-heading">Activity Feed</h2>
-    <p>Workout cards and filtering controls will go here.</p>
-  </section>
-</main>
+    <div id="data-notices"></div>
+
+    <section class="card" aria-labelledby="activity-heading">
+      <div class="section-header">
+        <h2 id="activity-heading">Activity Feed</h2>
+        <a href="tracker.html">Log a run</a>
+      </div>
+
+      <p class="community-note">
+        Runs marked <span class="badge badge-sample">Sample</span> come from demo athletes so you can try
+        community features. Likes and follows are saved in this browser only.
+      </p>
+
+      <fieldset class="filter-group">
+        <legend>Show activity from</legend>
+        <div class="segmented">
+          <input type="radio" id="feed-filter-all" name="feed-filter" value="all" checked>
+          <label for="feed-filter-all">All Activity</label>
+          <input type="radio" id="feed-filter-following" name="feed-filter" value="following">
+          <label for="feed-filter-following">Following</label>
+          <input type="radio" id="feed-filter-mine" name="feed-filter" value="mine">
+          <label for="feed-filter-mine">My Runs</label>
+        </div>
+      </fieldset>
+
+      <p id="feed-status" class="results-status" role="status" aria-live="polite"></p>
+      <div id="feed-alert" class="form-status" role="alert"></div>
+
+      <ul id="feed-list" class="activity-list" aria-labelledby="activity-heading"></ul>
+      <div id="feed-empty" class="empty-panel" hidden></div>
+    </section>
+  </main>
 
   <footer class="site-footer">
     <div class="container">
