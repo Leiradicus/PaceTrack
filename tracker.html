@@ -8,8 +8,7 @@
 
   <link rel="stylesheet" href="css/style.css">
 
-  <script src="js/storage.js" defer></script>
-  <script src="js/tracker.js" defer></script>
+  <script src="js/app.js" defer></script>
 </head>
 
 <body>
@@ -18,7 +17,7 @@
   <header class="site-header">
     <div class="container header-content">
       <a class="logo" href="index.html" aria-label="PaceTrack home">
-        <img src="images/pacetrack-logo.png" alt="PaceTrack" width="144" height="48">
+        <img src="assets/pacetrack-logo.png" alt="PaceTrack logo">
       </a>
 
       <nav aria-label="Main navigation">
@@ -35,95 +34,12 @@
           <li>
             <a href="athletes.html">Athletes</a>
           </li>
-          <li>
-            <a href="edit-profile.html">Edit Profile</a>
-          </li>
         </ul>
       </nav>
     </div>
   </header>
 
-  <main id="main-content" class="container" tabindex="-1">
-  <h1>Log a Run</h1>
-
-  <p class="page-description">
-    Record your workout and calculate your running pace.
-  </p>
-
-  <section class="card" aria-labelledby="run-heading">
-    <h2 id="run-heading">New Workout</h2>
-
-    <p class="form-hint">Fields marked <span aria-hidden="true">*</span><span class="visually-hidden">with an asterisk</span> are required.</p>
-
-    <form id="run-form" class="run-form" novalidate>
-      <div class="form-row">
-        <div class="form-field">
-          <label for="run-date">Date <span aria-hidden="true">*</span></label>
-          <input type="date" id="run-date" name="date" required
-                 aria-describedby="run-date-error">
-          <p class="field-error" id="run-date-error"></p>
-        </div>
-
-        <div class="form-field">
-          <label for="run-distance">Distance (miles) <span aria-hidden="true">*</span></label>
-          <input type="number" id="run-distance" name="distance" required
-                 min="0.01" step="0.01" inputmode="decimal"
-                 aria-describedby="run-distance-error">
-          <p class="field-error" id="run-distance-error"></p>
-        </div>
-      </div>
-
-      <fieldset class="form-field duration-fieldset" id="run-duration"
-                aria-describedby="run-duration-error">
-        <legend>Duration <span aria-hidden="true">*</span></legend>
-        <div class="duration-inputs">
-          <div>
-            <label for="run-hours">Hours</label>
-            <input type="number" id="run-hours" name="hours"
-                   min="0" step="1" inputmode="numeric" placeholder="0">
-          </div>
-          <div>
-            <label for="run-minutes">Minutes</label>
-            <input type="number" id="run-minutes" name="minutes"
-                   min="0" max="59" step="1" inputmode="numeric" placeholder="0">
-          </div>
-          <div>
-            <label for="run-seconds">Seconds</label>
-            <input type="number" id="run-seconds" name="seconds"
-                   min="0" max="59" step="1" inputmode="numeric" placeholder="0">
-          </div>
-        </div>
-        <p class="field-error" id="run-duration-error"></p>
-      </fieldset>
-
-      <div class="form-field">
-        <label for="run-title">Title (optional)</label>
-        <input type="text" id="run-title" name="title" maxlength="80"
-               placeholder="e.g. Easy morning run">
-      </div>
-
-      <div class="form-field">
-        <label for="run-notes">Notes (optional)</label>
-        <textarea id="run-notes" name="notes" rows="3" maxlength="500"></textarea>
-      </div>
-
-      <p class="pace-preview" id="pace-preview" aria-live="polite">
-        Pace: <strong id="pace-preview-value">—</strong>
-      </p>
-
-      <button type="submit" class="button">Save Run</button>
-
-      <div id="form-status" class="form-status" role="status" aria-live="polite"></div>
-      <div id="form-alert" class="form-status" role="alert"></div>
-    </form>
-  </section>
-
-  <section class="card" aria-labelledby="history-heading">
-    <h2 id="history-heading">Run History</h2>
-    <p id="history-empty" class="empty-state">No runs logged yet. Your saved runs will appear here.</p>
-    <ul id="history-list" class="run-list"></ul>
-  </section>
-</main>
+  <main id="main-content" class="container" tabindex="-1"></main>
 
   <footer class="site-footer">
     <div class="container">
