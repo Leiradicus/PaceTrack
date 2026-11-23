@@ -44,7 +44,15 @@
     { id: "ath-noah", name: "Noah Williams", school: "Oregon State University", category: "Collegiate", gradYear: "2027", events: ["400m", "800m"], pr: "49.82 · 400m", city: "Corvallis", nearby: false, similar: true, avatar: "" },
     { id: "ath-sofia", name: "Sofia Ramirez", school: "Rose City Track Club", category: "Club", gradYear: "2025", events: ["Long Jump", "Triple Jump"], pr: "5.82m · Long Jump", city: "Portland", nearby: true, similar: false, avatar: "" },
     { id: "ath-ethan", name: "Ethan Brooks", school: "Westview High School", category: "High School", gradYear: "2028", events: ["100m", "200m", "400m"], pr: "11.14 · 100m", city: "Beaverton", nearby: true, similar: true, avatar: "" },
-    { id: "ath-ava", name: "Ava Patel", school: "Portland State University", category: "Collegiate", gradYear: "2026", events: ["Shot Put", "Discus"], pr: "12.46m · Shot Put", city: "Portland", nearby: false, similar: false, avatar: "" }
+    { id: "ath-ava", name: "Ava Patel", school: "Portland State University", category: "Collegiate", gradYear: "2026", events: ["Shot Put", "Discus"], pr: "12.46m · Shot Put", city: "Portland", nearby: false, similar: false, avatar: "" },
+    { id: "ath-jayden", name: "Jayden Ortiz", school: "Grant High School", category: "High School", gradYear: "2027", events: ["55m", "60m", "200m"], pr: "6.48 · 55m", city: "Portland", nearby: true, similar: true, avatar: "" },
+    { id: "ath-lila", name: "Lila Thompson", school: "University of Oregon", category: "Collegiate", gradYear: "2026", events: ["60m Hurdles", "100m Hurdles", "400m Hurdles"], pr: "8.41 · 60m Hurdles", city: "Eugene", nearby: false, similar: false, avatar: "" },
+    { id: "ath-marcus", name: "Marcus Hill", school: "Beaverton Track Club", category: "Club", gradYear: "2025", events: ["55m Hurdles", "110m Hurdles"], pr: "7.62 · 55m Hurdles", city: "Beaverton", nearby: true, similar: true, avatar: "" },
+    { id: "ath-priya", name: "Priya Nair", school: "Jefferson High School", category: "High School", gradYear: "2026", events: ["60m", "100m", "Long Jump"], pr: "7.78 · 60m", city: "Portland", nearby: true, similar: false, avatar: "" },
+    { id: "ath-caleb", name: "Caleb Johnson", school: "Lane Community College", category: "Collegiate", gradYear: "2027", events: ["1500m", "5K", "Steeplechase"], pr: "4:01.20 · 1500m", city: "Eugene", nearby: false, similar: true, avatar: "" },
+    { id: "ath-nina", name: "Nina Alvarez", school: "Pacific Throwers Club", category: "Club", gradYear: "2024", events: ["Javelin", "Hammer", "Discus"], pr: "44.10m · Javelin", city: "Salem", nearby: false, similar: false, avatar: "" },
+    { id: "ath-owen", name: "Owen Park", school: "Central Catholic High School", category: "High School", gradYear: "2028", events: ["55m Hurdles", "300m Hurdles", "High Jump"], pr: "7.95 · 55m Hurdles", city: "Portland", nearby: true, similar: true, avatar: "" },
+    { id: "ath-samir", name: "Samir Khan", school: "Portland State University", category: "Collegiate", gradYear: "2025", events: ["60m", "200m", "400m"], pr: "6.89 · 60m", city: "Portland", nearby: false, similar: true, avatar: "" }
   ];
 
   const isoDay = offset => {
