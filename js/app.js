@@ -34,10 +34,12 @@
   const EVENT_MAP = new Map(EVENTS.flatMap(group => group.options.map(event =>
     [event[0], { id: event[0], label: event[1], kind: event[2], distance: event[3] || null }]
   )));
+  // A brand-new visitor starts with an empty, unregistered profile and must
+  // complete the registration form before using the rest of the app.
   const PROFILE_DEFAULT = {
-    name: "Jordan Lee", gradYear: "2027", school: "Northside Track Club",
-    category: "Club", bio: "Finding my pace, one lap at a time.",
-    avatar: "", discoveryEnabled: true
+    name: "", gradYear: "", school: "",
+    category: "Club", bio: "",
+    avatar: "", discoveryEnabled: false, registered: false
   };
   const ATHLETE_SEEDS = [
     { id: "ath-maya", name: "Maya Chen", school: "Lincoln High School", category: "High School", gradYear: "2026", events: ["800m", "1600m", "5K"], pr: "2:16.42 · 800m", city: "Portland", nearby: true, similar: true, avatar: "" },
@@ -78,13 +80,82 @@
     };
   }
 
+  // ---------- Security helpers ----------
+  // Allow-lists and limits used to validate everything a user (or a tampered
+  // localStorage entry) can feed into the app.
+  const PROFILE_CATEGORIES = ["High School", "College", "Club"];
+  const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+  const MAX_IMAGE_BYTES = 1024 * 1024;
+  const IMPORT_HOSTS = ["tfrrs.org", "milesplit.com", "athletic.net"];
+  const LIMITS = { name: 60, school: 100, bio: 180 };
+
+  // Strips control characters and trims/limits length of free text.
+  function cleanText(value, maxLength) {
+    return String(value ?? "").replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, maxLength);
+  }
+
+  // Only images that PaceTrack created itself (base64 data URLs of an allowed
+  // type) or local files may be used as an <img src>. Blocks javascript:,
+  // remote tracking pixels, and SVG data URLs injected via localStorage.
+  function safeImageSrc(src) {
+    const value = String(src || "");
+    if (/^data:image\/(png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(value)) return value;
+    if (/^(assets|images)\/[\w./-]+$/.test(value) && !value.includes("..")) return value;
+    return "";
+  }
+
+  function sanitizeProfile(raw) {
+    const profile = raw && typeof raw === "object" ? raw : {};
+    const gradYear = String(profile.gradYear ?? "");
+    const name = cleanText(profile.name, LIMITS.name);
+    const school = cleanText(profile.school, LIMITS.school);
+    return {
+      name,
+      gradYear: /^\d{4}$/.test(gradYear) ? gradYear : "",
+      school,
+      category: PROFILE_CATEGORIES.includes(profile.category) ? profile.category : PROFILE_DEFAULT.category,
+      bio: cleanText(profile.bio, LIMITS.bio),
+      avatar: safeImageSrc(profile.avatar),
+      discoveryEnabled: profile.discoveryEnabled === true,
+      // A profile only counts as registered if its required fields are valid.
+      registered: profile.registered === true && Boolean(name && school)
+    };
+  }
+
+  // Shared validation for the registration form and the edit-profile dialog.
+  // Returns { error } or { values }.
+  function validateProfileForm(form) {
+    const data = new FormData(form);
+    const name = cleanText(data.get("name"), LIMITS.name);
+    const school = cleanText(data.get("school"), LIMITS.school);
+    const gradYear = cleanText(data.get("gradYear"), 4);
+    const category = String(data.get("category"));
+    if (!name || !school) return { error: "Name and school or club are required." };
+    if (gradYear && !(/^\d{4}$/.test(gradYear) && gradYear >= "1950" && gradYear <= "2100")) {
+      return { error: "Graduation year must be a 4-digit year." };
+    }
+    if (!PROFILE_CATEGORIES.includes(category)) return { error: "Choose a valid affiliation type." };
+    return { values: { name, school, gradYear, category, bio: cleanText(data.get("bio"), LIMITS.bio) } };
+  }
+
+  function isRegistered() {
+    return state.profile.registered === true;
+  }
+
   function loadState() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return initialState();
       const parsed = JSON.parse(saved);
       return {
-        profile: { ...PROFILE_DEFAULT, ...(parsed.profile || {}) },
+        // Stored data is treated as untrusted input and re-validated.
+        // Profiles saved before registration existed are treated as registered
+        // (if their name and school are valid) so returning users aren't locked out.
+        profile: sanitizeProfile({
+          ...PROFILE_DEFAULT,
+          ...(parsed.profile ? { registered: true, discoveryEnabled: true } : {}),
+          ...(parsed.profile || {})
+        }),
         workouts: Array.isArray(parsed.workouts) ? parsed.workouts : [],
         athletes: Array.isArray(parsed.athletes) && parsed.athletes.length
           ? parsed.athletes : ATHLETE_SEEDS.map(athlete => ({ ...athlete })),
@@ -158,8 +229,9 @@
   }
 
   function profileAvatar(profile = state.profile, className = "avatar") {
-    return profile.avatar
-      ? `<img class="${className}" src="${escapeHtml(profile.avatar)}" alt="${escapeHtml(profile.name)}">`
+    const avatar = safeImageSrc(profile.avatar);
+    return avatar
+      ? `<img class="${className}" src="${escapeHtml(avatar)}" alt="${escapeHtml(profile.name)}">`
       : `<span class="${className} avatar-placeholder" aria-hidden="true">${escapeHtml((profile.name || "?").split(/\s+/).map(part => part[0]).slice(0, 2).join("").toUpperCase())}</span>`;
   }
 
@@ -281,10 +353,11 @@
           <div class="section-heading"><div><p class="eyebrow">MAKE IT YOURS</p><h2>Edit profile</h2></div>
             <button type="button" class="icon-button" aria-label="Close dialog" data-action="close-profile">×</button></div>
           <label class="upload-row">${profileAvatar()}
-            <span><strong>Profile photo</strong><small>JPG, PNG or WebP. Max 1 MB.</small></span>
-            <input type="file" name="avatar" accept="image/*" class="visually-hidden" data-action="profile-photo">
+            <span><strong>Profile photo</strong><small>JPG, PNG or WebP. Max 1 MB. Location data is removed.</small></span>
+            <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp" class="visually-hidden" data-action="profile-photo">
           </label>
-          <label>Full name<input name="name" required maxlength="60" value="${escapeHtml(state.profile.name)}"></label>
+          <p class="privacy-note">Privacy: your profile is stored only in this browser. Don't include your phone number, email, or home address.</p>
+          <label>Full name<input name="name" required maxlength="60" autocomplete="name" value="${escapeHtml(state.profile.name)}"></label>
           <div class="form-grid">
             <label>Graduation year<input name="gradYear" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" value="${escapeHtml(state.profile.gradYear)}"></label>
             <label>Affiliation type<select name="category">${["High School", "College", "Club"].map(category =>
@@ -295,6 +368,68 @@
           <div class="form-actions"><button type="button" class="button button-secondary" data-action="close-profile">Cancel</button><button class="button button-primary">Save profile</button></div>
         </form>
       </dialog>`;
+  }
+
+  function renderRegistration() {
+    return `<section class="page-heading">
+        <div><p class="eyebrow">WELCOME TO PACETRACK</p><h1>Create your runner profile</h1>
+          <p class="page-description">Set up your profile to start logging sessions and connecting with athletes.</p></div>
+      </section>
+      <form id="register-form" class="card form-card register-card" novalidate aria-describedby="register-privacy">
+        <div class="section-heading"><div><p class="eyebrow">STEP 1 OF 1</p><h2>Your details</h2></div></div>
+        <p id="register-privacy" class="privacy-note">Privacy: your profile is stored only in this browser and is never uploaded. Only add what you're comfortable sharing, and don't include your phone number, email, or home address.</p>
+        <label class="upload-row">${profileAvatar()}
+          <span><strong>Profile photo (optional)</strong><small>JPG, PNG or WebP. Max 1 MB. Location data is removed.</small></span>
+          <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp" class="visually-hidden">
+        </label>
+        <label>Full name <span aria-hidden="true">*</span><input name="name" required maxlength="${LIMITS.name}" autocomplete="name"></label>
+        <label>School or club <span aria-hidden="true">*</span><input name="school" required maxlength="${LIMITS.school}" autocomplete="organization"></label>
+        <div class="form-grid">
+          <label>Affiliation type<select name="category">${PROFILE_CATEGORIES.map(category =>
+            `<option ${category === PROFILE_DEFAULT.category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label>
+          <label>Graduation year (optional)<input name="gradYear" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="e.g. 2027"></label>
+        </div>
+        <label>Short bio (optional)<textarea name="bio" rows="3" maxlength="${LIMITS.bio}" placeholder="Finding my pace, one lap at a time."></textarea></label>
+        <label class="check-row"><input type="checkbox" name="discoveryEnabled"> Let nearby athletes and athletes with a similar pace discover me (you can change this later)</label>
+        <p class="form-hint"><span aria-hidden="true">*</span> Required</p>
+        <p id="register-error" class="form-error" role="alert"></p>
+        <button class="button button-primary button-wide" type="submit">Create profile</button>
+      </form>`;
+  }
+
+  async function submitRegistration(form) {
+    const errorEl = document.querySelector("#register-error");
+    errorEl.textContent = "";
+    const result = validateProfileForm(form);
+    if (result.error) {
+      errorEl.textContent = result.error;
+      form.querySelector(":invalid")?.focus();
+      return;
+    }
+    let avatar = "";
+    try {
+      avatar = await imageAsDataUrl(form.elements.avatar.files[0]);
+    } catch (error) {
+      errorEl.textContent = error.message;
+      return;
+    }
+    const previous = state.profile;
+    state.profile = {
+      ...PROFILE_DEFAULT,
+      ...result.values,
+      avatar: safeImageSrc(avatar),
+      discoveryEnabled: form.elements.discoveryEnabled.checked,
+      registered: true
+    };
+    if (!saveState()) {
+      state.profile = previous;
+      errorEl.textContent = "Your profile couldn't be saved. Check that your browser allows site storage.";
+      return;
+    }
+    // Continue to the page the user originally opened.
+    render();
+    main.focus({ preventScroll: true });
+    notify(`Welcome to PaceTrack, ${state.profile.name}!`);
   }
 
   function renderTracker() {
@@ -326,8 +461,8 @@
             <label class="check-row"><input type="checkbox" name="showMph" checked> Calculate mph (miles per hour)</label>
             <output id="calculation-preview" class="calculation-preview" aria-live="polite">Enter a distance and time to preview speed.</output>
           </fieldset>
-          <label>Attach a meet photo or score sheet <span class="label-hint">Optional · Max 1 MB</span>
-            <input type="file" name="photo" id="workout-photo" accept="image/*"></label>
+          <label>Attach a meet photo or score sheet <span class="label-hint">Optional · JPG, PNG or WebP · Max 1 MB · Location data is removed</span>
+            <input type="file" name="photo" id="workout-photo" accept="image/jpeg,image/png,image/webp"></label>
           <div id="photo-preview" class="photo-preview" aria-live="polite"></div>
           <section class="import-panel" aria-labelledby="import-heading">
             <div><p class="eyebrow">SAVE TIME</p><h3 id="import-heading">Import official times</h3>
@@ -338,7 +473,7 @@
               <button type="button" class="provider-button" data-provider="Athletic.net">Athletic.net</button>
             </div>
             <label class="visually-hidden" for="import-input">Result link or athlete ID</label>
-            <div class="import-row"><input id="import-input" type="text" placeholder="Paste a result URL or athlete ID">
+            <div class="import-row"><input id="import-input" type="text" maxlength="200" autocomplete="off" placeholder="Paste a result URL or athlete ID">
               <button type="button" class="button button-secondary" data-action="mock-import">Fill from result</button></div>
             <p id="verified-note" class="verified-note is-hidden">✓ Result imported · verified mark</p>
           </section>
@@ -388,7 +523,7 @@
         <strong class="workout-mark">${escapeHtml(formatMark(workout))}</strong>
         ${metrics ? `<span class="workout-speed">${escapeHtml(metrics)}</span>` : ""}
       </div>
-      ${workout.photo ? `<img class="workout-photo" src="${escapeHtml(workout.photo)}" alt="Photo attached to ${escapeHtml(workout.eventLabel)} session" loading="lazy">` : ""}
+      ${safeImageSrc(workout.photo) ? `<img class="workout-photo" src="${escapeHtml(safeImageSrc(workout.photo))}" alt="Photo attached to ${escapeHtml(workout.eventLabel)} session" loading="lazy">` : ""}
       <div class="reaction-row" aria-label="Reactions">
         ${[["kudos", "⚡", "Kudos"], ["fire", "🔥", "Fire"], ["clap", "👏", "Clap"]].map(([key, emoji, label]) =>
           `<button type="button" class="reaction-button ${mine[key] ? "is-reacted" : ""}" data-action="react" data-workout="${escapeHtml(workout.id)}" data-reaction="${key}" aria-pressed="${mine[key] ? "true" : "false"}" aria-label="${label}, ${counts[key] || 0} reactions">${emoji} <span>${label}</span> <b>${counts[key] || 0}</b></button>`
@@ -472,8 +607,18 @@
   }
 
   function render() {
+    // Registration gate: until a profile exists, every page shows the
+    // registration form and the main navigation is hidden.
+    nav.closest("nav").hidden = !isRegistered();
+    if (!isRegistered()) {
+      document.title = "Create your profile | PaceTrack";
+      main.innerHTML = renderRegistration();
+      return;
+    }
     document.title = `${NAV_LINKS.find(link => link.id === view)?.label || "Home"} | PaceTrack`;
     updateNav();
+    // Safe: every user-controlled value inside these templates is passed
+    // through escapeHtml() and image URLs through safeImageSrc().
     main.innerHTML = view === "tracker" ? renderTracker()
       : view === "feed" ? renderFeed()
         : view === "athletes" ? renderAthletes() : renderHome();
@@ -532,42 +677,98 @@
     preview.textContent = values.length ? `Calculated speed · ${values.join(" · ")}` : "Select a calculation to display speed.";
   }
 
+  // Validates an uploaded image, then re-draws it on a canvas. Re-encoding
+  // strips EXIF metadata (GPS location, device info) for privacy and ensures
+  // only real pixel data — never SVG/script content — is ever stored.
   function imageAsDataUrl(file) {
     return new Promise((resolve, reject) => {
       if (!file) return resolve("");
-      if (!file.type.startsWith("image/")) return reject(new Error("Choose an image file."));
-      if (file.size > 1024 * 1024) return reject(new Error("Images must be 1 MB or smaller."));
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("This image could not be read."));
-      reader.readAsDataURL(file);
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) return reject(new Error("Choose a JPG, PNG, or WebP image."));
+      if (file.size > MAX_IMAGE_BYTES) return reject(new Error("Images must be 1 MB or smaller."));
+      const objectUrl = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, 1200 / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(image.naturalWidth * scale);
+        canvas.height = Math.round(image.naturalHeight * scale);
+        canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(objectUrl);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("This image could not be read."));
+      };
+      image.src = objectUrl;
     });
+  }
+
+  // Builds the preview with DOM APIs instead of innerHTML string building.
+  function createPreviewImage(dataUrl, className, alt) {
+    const img = document.createElement("img");
+    if (className) img.className = className;
+    img.src = safeImageSrc(dataUrl);
+    img.alt = alt;
+    return img;
   }
 
   function setImagePreview(file, container) {
     if (!file) {
-      container.innerHTML = "";
+      container.replaceChildren();
       return Promise.resolve("");
     }
     return imageAsDataUrl(file).then(dataUrl => {
-      container.innerHTML = `<img src="${escapeHtml(dataUrl)}" alt="Selected image preview">`;
+      container.replaceChildren(createPreviewImage(dataUrl, "", "Selected image preview"));
       return dataUrl;
     });
+  }
+
+  // Accepts either a plain athlete ID or an HTTPS link to a known results site.
+  function isValidImportValue(value) {
+    if (/^[A-Za-z0-9_-]{1,40}$/.test(value)) return true;
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:"
+        && IMPORT_HOSTS.some(host => url.hostname === host || url.hostname.endsWith(`.${host}`));
+    } catch {
+      return false;
+    }
+  }
+
+  function isValidIsoDate(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T12:00:00`);
+    return !Number.isNaN(date.getTime()) && value >= "1950-01-01" && value <= isoDay(1);
   }
 
   async function submitWorkout(form) {
     const errorEl = document.querySelector("#form-error");
     errorEl.textContent = "";
+    // Never trust the <select>: its value can be edited in dev tools.
     const event = EVENT_MAP.get(form.elements.event.value);
+    if (!event) {
+      errorEl.textContent = "Choose an event from the list.";
+      return;
+    }
+    if (!["m", "ft"].includes(form.elements.unit.value)) {
+      errorEl.textContent = "Choose a valid unit.";
+      return;
+    }
+    if (!isValidIsoDate(form.elements.date.value)) {
+      errorEl.textContent = "Enter a valid date that is not in the future.";
+      form.elements.date.focus();
+      return;
+    }
     const seconds = event.kind === "run" ? parseDuration(form.elements.time.value) : null;
     const meters = metricDistance(form);
-    if (event.kind === "run" && !seconds) {
-      errorEl.textContent = "Enter a valid time (MM:SS.ms or HH:MM:SS.ms).";
+    if (event.kind === "run" && (!seconds || seconds > 24 * 3600)) {
+      errorEl.textContent = "Enter a valid time (MM:SS.ms or HH:MM:SS.ms) under 24 hours.";
       form.elements.time.focus();
       return;
     }
-    if (!meters) {
-      errorEl.textContent = "Enter a valid positive distance or mark.";
+    if (!meters || meters > (event.kind === "run" ? 100000 : 150)) {
+      errorEl.textContent = "Enter a valid positive distance or mark within a realistic range.";
       return;
     }
     if (event.kind === "run" && !form.elements.showMps.checked && !form.elements.showMph.checked) {
@@ -607,7 +808,13 @@
   }
 
   async function submitProfile(form) {
-    const data = new FormData(form);
+    // Re-validate in JavaScript: HTML attributes like maxlength/pattern are
+    // easy to bypass, so they are only a convenience for the user.
+    const result = validateProfileForm(form);
+    if (result.error) {
+      notify(result.error);
+      return;
+    }
     const file = form.elements.avatar.files[0];
     let avatar = state.profile.avatar;
     try {
@@ -619,12 +826,8 @@
     const previous = state.profile;
     state.profile = {
       ...state.profile,
-      name: String(data.get("name")).trim(),
-      gradYear: String(data.get("gradYear")).trim(),
-      school: String(data.get("school")).trim(),
-      category: String(data.get("category")),
-      bio: String(data.get("bio")).trim(),
-      avatar
+      ...result.values,
+      avatar: safeImageSrc(avatar)
     };
     if (!saveState()) {
       state.profile = previous;
@@ -642,6 +845,8 @@
   }
 
   function handleClick(event) {
+    // Navigation is disabled until the user has registered.
+    if (!isRegistered()) return;
     const routeLink = event.target.closest("a[data-route]");
     if (routeLink) {
       event.preventDefault();
@@ -666,10 +871,12 @@
     if (action === "edit-profile") document.querySelector("#profile-dialog")?.showModal();
     if (action === "close-profile") document.querySelector("#profile-dialog")?.close();
     if (action === "feed-filter") {
+      if (!["all", "near", "similar"].includes(button.dataset.filter)) return;
       feedFilter = button.dataset.filter;
       render();
     }
     if (action === "athlete-filter") {
+      if (!["all", "High School", "Collegiate", "Club", "near"].includes(button.dataset.filter)) return;
       if (button.dataset.filter === "near" && !state.profile.discoveryEnabled) {
         athleteFilter = "near";
         render();
@@ -711,6 +918,13 @@
         document.querySelector("#import-input").focus();
         return;
       }
+      if (!isValidImportValue(importValue)) {
+        notify("Use an athlete ID (letters, numbers, - or _) or an https:// link from TFRRS, MileSplit, or Athletic.net.");
+        document.querySelector("#import-input").focus();
+        return;
+      }
+      // The link/ID is only checked, never stored or sent anywhere.
+      document.querySelector("#import-input").value = "";
       const eventSelect = document.querySelector("#event-select");
       const defaultOption = eventSelect.querySelector("option[value='800m']");
       if (defaultOption) eventSelect.value = "800m";
@@ -767,17 +981,17 @@
       const preview = document.querySelector("#photo-preview");
       setImagePreview(target.files[0], preview).catch(error => {
         target.value = "";
-        preview.innerHTML = "";
+        preview.replaceChildren();
         notify(error.message);
       });
     }
     if (target.matches("input[name=avatar]")) {
       const avatar = target.files[0];
       if (!avatar) return;
-      setImagePreview(avatar, target.closest(".upload-row").querySelector(".avatar"))
+      imageAsDataUrl(avatar)
         .then(dataUrl => {
           const preview = target.closest(".upload-row").querySelector(".avatar");
-          preview.outerHTML = `<img class="avatar" src="${escapeHtml(dataUrl)}" alt="Selected profile photo preview">`;
+          preview.replaceWith(createPreviewImage(dataUrl, "avatar", "Selected profile photo preview"));
         })
         .catch(error => {
           target.value = "";
@@ -806,6 +1020,9 @@
     if (event.target.matches("#workout-form")) {
       event.preventDefault();
       submitWorkout(event.target);
+    } else if (event.target.matches("#register-form")) {
+      event.preventDefault();
+      submitRegistration(event.target);
     } else if (event.target.matches("#profile-form")) {
       event.preventDefault();
       submitProfile(event.target);
