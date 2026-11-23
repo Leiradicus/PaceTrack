@@ -1106,6 +1106,30 @@ main.container {
   clip-path: inset(50%) !important;
 }
 
+/* ---------- Registration (first visit) ---------- */
+.register-card {
+  max-width: 620px;
+}
+
+.register-card .privacy-note {
+  margin: 0 0 18px;
+}
+
+.register-card .check-row {
+  margin: 0 0 14px;
+  align-items: flex-start;
+}
+
+.register-card .form-hint {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+nav[hidden] {
+  display: none !important;
+}
+
 .app-status {
   position: fixed;
   right: 20px;

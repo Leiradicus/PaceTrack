@@ -91,13 +91,19 @@ PaceTrack is a fully static site, so it can be hosted on any static host, such a
 
 ### Resetting the app
 
-To clear all saved data, open the browser's developer tools (**F12**), go to **Application → Local Storage**, and delete the `pacetrack-app-v1`, `pacetrack.runs`, and `pacetrack.profile` keys. Then reload the page.
+To clear all saved data, open the browser's developer tools (**F12**), go to **Application → Local Storage**, and delete the `pacetrack-app-v1`, `pacetrack.runs`, and `pacetrack.profile` keys. Then reload the page. You will be asked to register a new profile.
 
 ---
 
 ## Major Pages and Features
 
 Use the header navigation to move between pages. The four main pages share one script (`js/app.js`), which switches views without a full page reload and keeps the browser's Back and Forward buttons working.
+
+### Registration (first visit)
+- A new visitor must **create a runner profile before using the app**. Until then, every page shows the registration form and the header navigation is hidden.
+- Asks for full name and school or club (required), plus affiliation type, graduation year, bio, and photo (optional).
+- Discovery by nearby and similar-pace athletes is **off by default**. The user has to turn it on.
+- After registering, the user goes to the page they first opened. Profiles saved before this feature was added are kept and are not asked to register again.
 
 ### Home (`index.html`)
 - **Runner profile card** showing name, avatar, school or club, graduation year, affiliation, and bio.
@@ -202,16 +208,25 @@ PaceTrack runs entirely in the browser, which keeps its attack surface small. Th
 
 **Measures in place**
 - **No server and no network requests.** User data never leaves the device, and the results importer is simulated, so no third-party data is sent or received.
-- **Output escaping.** All user-supplied text (names, bios, notes, search terms) goes through an `escapeHtml()` function before it is inserted into the page, which helps prevent cross-site scripting (XSS).
-- **Input validation.** Fields enforce `maxlength`, `min`/`max`, `pattern`, and `required` rules. JavaScript also checks values again before saving.
-- **File upload checks.** Uploaded files must have an `image/*` type and be **1 MB or smaller**. They are read locally with `FileReader` and never uploaded anywhere.
-- **Safe storage handling.** Reads from `localStorage` are wrapped in `try/catch`. Damaged or unexpected data is skipped or replaced with defaults instead of crashing the app, and save failures (for example, a full quota or private browsing mode) show a message to the user.
+- **Content Security Policy.** Every page has a CSP `<meta>` tag (`default-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'`), so the browser refuses inline scripts, remote scripts/styles, and remote images even if malicious markup slipped in. A `no-referrer` policy keeps page URLs from leaking to other sites.
+- **Output escaping (XSS).** All user-supplied text (names, bios, notes, search terms) goes through `escapeHtml()` before being placed in HTML templates. New DOM pieces such as image previews are built with `createElement`/`textContent` instead of `innerHTML`/`outerHTML`.
+- **Safe image URLs.** `safeImageSrc()` only allows `data:image/(png|jpeg|webp);base64` URLs created by the app or local `assets/`/`images/` paths, blocking `javascript:` URLs, SVG data URLs, and remote tracking images.
+- **Input validation in JavaScript, not just HTML.** HTML attributes (`maxlength`, `pattern`, `required`) are convenience only. Before saving, JavaScript re-checks lengths, strips control characters, verifies the graduation year, date (valid and not in the future), time and distance ranges, and checks `<select>` and filter values against allow-lists, since these can be edited in dev tools.
+- **Untrusted storage.** Data read back from `localStorage` is re-validated (`sanitizeProfile()`), because another script or a user could have edited it. Reads are wrapped in `try/catch`, and damaged data falls back to defaults.
+- **File upload checks.** Uploads must be JPG, PNG, or WebP and **1 MB or smaller**. They are read locally and never uploaded.
+- **Import field validation.** The demo importer only accepts a simple athlete ID or an `https://` link on tfrrs.org, milesplit.com, or athletic.net. The value is cleared after use and never stored.
+- **No secrets in the code.** There are no API keys, tokens, or passwords in the repository, and none are needed.
 - **No third-party scripts.** The site loads no external libraries, analytics, or CDNs, so there is no supply-chain risk.
+
+**Privacy**
+- **Photo metadata is removed.** Uploaded photos are re-drawn on a `<canvas>` and saved as a new JPEG, which strips EXIF data such as GPS location and camera details.
+- **Data minimization.** The profile asks only for name, school/club, graduation year, and a short bio. It does not ask for email, phone, birth date, or address, and the form reminds users not to add contact details.
+- **Discovery is opt-out.** Users can turn off "Near me" and "Similar pace" discovery, and an exact location is never collected or shown.
 
 **Limitations and recommendations**
 - `localStorage` is **not encrypted**. Anyone with access to the device or browser profile, or any script running on the same origin, can read it. Do not store sensitive personal information.
 - There is **no authentication**. Profiles, "verified" badges, and follows are local and for demonstration only, and they cannot be trusted as proof of identity or results.
-- Before deploying publicly, add a **Content Security Policy**, for example `default-src 'self'; img-src 'self' data:`, using a `<meta>` tag or HTTP header, and serve the site over **HTTPS**.
+- Before deploying publicly, serve the site over **HTTPS** and send the Content Security Policy as an HTTP header (some directives, like `frame-ancestors`, only work as a header).
 - A production version would need server-side validation, real authentication, and privacy controls appropriate for minors (many users are high school athletes) to comply with laws such as COPPA and FERPA.
 
 ---
